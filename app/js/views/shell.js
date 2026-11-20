@@ -1,8 +1,8 @@
 // App shell: header progress hero, tab navigation and theme switch.
 import { GRADE_ORDER, GRADE_LABELS } from '../config.js';
-import { allTrophies, gradeCounts } from '../data.js';
+import { allTrophies, gradeCounts, countersTotals } from '../data.js';
 import { getProgress, earnedCount } from '../store.js';
-import { medalDot } from '../html.js';
+import { medalDot, fmt } from '../html.js';
 
 /** Apply a theme name to the document element. */
 export function applyTheme(theme) {
@@ -16,6 +16,7 @@ export function renderShell(activeRoute) {
   const earned = earnedCount();
   const pct = total ? Math.round((earned / total) * 100) : 0;
   const counts = gradeCounts(progress.earned);
+  const counters = countersTotals(progress.counts);
   const chips = GRADE_ORDER.map((grade) => {
     const c = counts[grade] || { total: 0, earned: 0 };
     return (
@@ -41,7 +42,14 @@ export function renderShell(activeRoute) {
     '<div class="hero-mid"><div class="progressbar"><span style="width:' +
     pct +
     '%"></span></div>' +
-    '<div class="hero-sub">55 trophies · 1 platinum · 2 gold · 6 silver · 46 bronze · 28 hidden on PlayStation</div></div>' +
+    '<div class="hero-sub">55 trophies · 1 platinum · 2 gold · 6 silver · 46 bronze · 28 hidden on PlayStation</div>' +
+    '<div class="hero-sub">Tracked counters: ' +
+    fmt(counters.current) +
+    ' / ' +
+    fmt(counters.target) +
+    ' (' +
+    counters.pct +
+    '%) across 20 PSN-tracked trophies</div></div>' +
     '<div class="grade-chips">' +
     chips +
     '</div>';

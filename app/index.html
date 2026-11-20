@@ -18,6 +18,9 @@
       <p class="tagline">GTA VI trophy guide &amp; tracker — offline, free, open</p>
     </div>
     <button id="theme-toggle" class="btn ghost" type="button" data-action="toggle-theme" title="Switch theme">☀︎ / ☾ Theme</button>
+    <button type="button" class="btn ghost" data-action="export" title="Export progress">Export</button>
+    <label class="import-label">Import <input id="import-file-header" type="file" accept="application/json"></label>
+    <span id="header-import-status" class="header-status"></span>
   </div>
   <div id="hero" class="hero" aria-live="polite"></div>
 </header>
@@ -26,11 +29,12 @@
   <a href="#/roadmap" data-route="roadmap">Roadmap</a>
   <a href="#/missables" data-route="missables">Missables</a>
   <a href="#/planner" data-route="planner">Next up</a>
-  <a href="#/settings" data-route="settings">Settings &amp; sources</a>
+  <a href="#/sources" data-route="sources">Sources</a>
+  <a href="#/settings" data-route="settings">Settings</a>
 </nav>
 <main id="view"></main>
 <footer class="foot">
-  <p>Official list: 55 trophies — 1 platinum, 2 gold, 6 silver, 46 bronze; 28 hidden on PlayStation. Names, descriptions and grades as PlayStation publishes them, via Exophase and PSNProfiles. Guides are this guide's own words, from the official descriptions, not yet checked in the game. No Rockstar logo or official artwork anywhere. Works fully offline — your progress never leaves this browser.</p>
+  <p>Official list: 55 trophies — 1 platinum, 2 gold, 6 silver, 46 bronze; 28 hidden on PlayStation. Names, descriptions and grades as PlayStation publishes them, via Exophase and PSNProfiles. Every guide step cites its sources — see the Sources tab for the full table, the trophy × source matrix and what the sources agree on, disagree on and leave undecided. Guides are this guide's own words, from the sources read, not yet checked in the game. The spoiler shield is on by default. No Rockstar logo or official artwork anywhere. Works fully offline — your progress never leaves this browser.</p>
   <p class="keys">Keys: <kbd>/</kbd> search · <kbd>Esc</kbd> back</p>
 </footer>
 <script type="module" src="js/main.js"></script>

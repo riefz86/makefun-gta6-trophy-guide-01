@@ -33,3 +33,21 @@
 }
 /* Sunset band under the header, both themes. */
 .topbar { border-top: 4px solid transparent; border-image: linear-gradient(90deg, #ffb347, #ff6b4a 45%, #c86dd7) 1; }
+
+/* v2 — callout colours, both themes. */
+[data-theme="night"] {
+  --warn: #ffb347;
+  --warn-bg: #3a2a12;
+  --warn-line: #6b4d1a;
+  --danger: #ff8a7a;
+  --danger-bg: #3a1713;
+  --danger-line: #6b2a22;
+}
+[data-theme="paper"] {
+  --warn: #8a5a12;
+  --warn-bg: #fdf3dd;
+  --warn-line: #e3c98a;
+  --danger: #a03024;
+  --danger-bg: #fdecea;
+  --danger-line: #e8b4ac;
+}

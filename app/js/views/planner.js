@@ -10,10 +10,10 @@ export function renderPlanner(root) {
   const starred = progress.next
     .map((id) => trophyById(id))
     .filter((t) => t)
-    .sort((a, b) => a.phase - b.phase || a.id - b.id);
+    .sort((a, b) => (a.missable ? 0 : 1) - (b.missable ? 0 : 1) || a.stage - b.stage || a.id - b.id);
   const suggested = allTrophies()
     .filter((t) => !isEarned(t.id) && !isNext(t.id))
-    .sort((a, b) => a.phase - b.phase || a.id - b.id)
+    .sort((a, b) => (a.missable ? 0 : 1) - (b.missable ? 0 : 1) || a.stage - b.stage || a.id - b.id)
     .slice(0, 3);
   const row = (t) =>
     '<article class="trophy-row' +
@@ -35,8 +35,8 @@ export function renderPlanner(root) {
     esc(t.description) +
     '</p><div class="meta"><span class="tag">' +
     esc(GRADE_LABELS[t.grade]) +
-    '</span><span class="tag">Phase ' +
-    t.phase +
+    '</span><span class="tag">Stage ' +
+    t.stage +
     '</span>' +
     (t.missable ? '<span class="tag missable">⚑ Missable</span>' : '') +
     '</div></div>' +
@@ -49,7 +49,7 @@ export function renderPlanner(root) {
     '">Guide →</a></div></article>';
   root.innerHTML =
     '<div class="view-head"><h2>Next up</h2>' +
-    '<p>Star a trophy anywhere in the guide (☆ on its row or its guide page) and it lands here, in roadmap order. Finish what is starred, then take the next suggestion.</p></div>' +
+    '<p>Star a trophy anywhere in the guide (☆ on its row or its guide page) and it lands here, missables first, in roadmap order. Finish what is starred, then take the next suggestion.</p></div>' +
     '<h3>Your list (' +
     starred.length +
     ')</h3>' +

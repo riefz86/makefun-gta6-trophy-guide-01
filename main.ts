@@ -3,9 +3,11 @@
 // The guide is this directory's app/ folder: plain static files a browser opens at
 // app/index.html (ES modules, CSS, no build step), offline — it loads nothing over the
 // network. Its trophy list and guides are app/data/trophies.json: the official 55 names,
-// descriptions and grades, plus a guide in our own words for every trophy, a roadmap,
-// missable flags and PSN-tracked counts. This program hands the guide in: it copies
-// app/ and screenshots/ from beside this file to /output and writes /output/dossier.json,
+// descriptions and grades, plus a guide in our own words for every trophy, numbered
+// cited steps, dispute and unconfirmed labels, a five-stage roadmap, tiered missable
+// flags and PSN-tracked counts; app/data/sources.json holds the source pages, what the
+// sources agree on, where they differ and what is still unconfirmed. This program hands
+// the guide in: it copies app/ and screenshots/ from beside this file to /output and writes /output/dossier.json,
 // the summary the judge reads (the screenshots, the first load's files and bytes, and
 // the source), with the vendored make.fun library. Leave vendor/makefun-frontend.ts as
 // it is: the scorer requires dossier.json to be byte for byte what its own copy writes.
@@ -21,6 +23,15 @@ import { buildDossier } from './vendor/makefun-frontend.ts';
 
 const here = fileURLToPath(new URL('.', import.meta.url));
 const out = process.env.MAKEFUN_OUTPUT_DIR ?? '/output';
+
+// v2: the Sources tab and the audit strip read app/data/sources.json, so refuse to
+// hand in a guide that lost it.
+if (!existsSync(join(here, 'app', 'data', 'sources.json'))) {
+  throw new Error('app/data/sources.json is missing — the Sources tab would be empty');
+}
+if (!existsSync(join(here, 'app', 'data', 'trophies.json'))) {
+  throw new Error('app/data/trophies.json is missing — the guide has no trophies');
+}
 
 mkdirSync(out, { recursive: true });
 cpSync(join(here, 'app'), join(out, 'app'), { recursive: true });

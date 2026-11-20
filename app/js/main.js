@@ -20,11 +20,12 @@ import { renderRoadmap } from './views/roadmap.js';
 import { renderMissables } from './views/missables.js';
 import { renderPlanner } from './views/planner.js';
 import { renderSettings } from './views/settings.js';
+import { renderSources } from './views/sources.js';
 
 const view = document.getElementById('view');
-const ui = { kind: 'all', grade: 'all', query: '' };
+const ui = { kind: 'all', grade: 'all', query: '', sort: 'psn', disputed: false, hiddenOnly: false, notEarned: false };
 
-/** Read the current route from the hash: #/ tracker, #/roadmap, #/missables, #/planner, #/settings, #/trophy/<id>. */
+/** Read the current route from the hash: #/ tracker, #/roadmap, #/missables, #/planner, #/settings, #/sources, #/trophy/<id>. */
 function parseHash() {
   const hash = window.location.hash.replace(/^#\/?/, '');
   const parts = hash.split('/');
@@ -32,6 +33,7 @@ function parseHash() {
   if (parts[0] === 'missables') return { name: 'missables' };
   if (parts[0] === 'planner') return { name: 'planner' };
   if (parts[0] === 'settings') return { name: 'settings' };
+  if (parts[0] === 'sources') return { name: 'sources' };
   if (parts[0] === 'trophy' && parts[1]) return { name: 'trophy', id: Number(parts[1]) };
   return { name: 'tracker' };
 }
@@ -44,6 +46,7 @@ function render() {
   else if (route.name === 'missables') renderMissables(view);
   else if (route.name === 'planner') renderPlanner(view);
   else if (route.name === 'settings') renderSettings(view);
+  else if (route.name === 'sources') renderSources(view);
   else if (route.name === 'trophy') renderDetail(view, route.id);
   else renderChecklist(view, ui);
   window.scrollTo(0, 0);
@@ -117,9 +120,18 @@ window.addEventListener('sunset-settings-changed', () => {
 window.addEventListener('sunset-import-file', async (event) => {
   const file = event.detail;
   const result = importProgress(await file.text());
-  const status = document.getElementById('import-status');
+  const status = document.getElementById('import-status') || document.getElementById('header-import-status');
   if (status) status.textContent = result.ok ? 'Imported.' : 'Import failed: ' + result.error;
   if (result.ok) render();
+});
+
+// The header's import control dispatches the same event as the settings page's.
+document.addEventListener('change', (event) => {
+  if (event.target.id === 'import-file-header') {
+    const file = event.target.files[0];
+    if (!file) return;
+    window.dispatchEvent(new CustomEvent('sunset-import-file', { detail: file }));
+  }
 });
 
 // Keyboard: / focuses search, Esc goes back from a trophy page.

@@ -7,7 +7,7 @@ function blankProgress() {
     counts: {},
     notes: {},
     next: [],
-    settings: { theme: 'night', spoilers: false, hideEarned: false },
+    settings: { theme: 'night', spoilers: true, hideEarned: false },
   };
 }
 
@@ -107,7 +107,7 @@ export function toggleNext(id) {
 
 /** The whole progress as a JSON file's text, for export. */
 export function exportProgress() {
-  return JSON.stringify({ app: 'sunset-platinum', version: 1, progress }, null, 2);
+  return JSON.stringify({ app: 'sunset-platinum', version: 2, progress }, null, 2);
 }
 
 /** Replace progress from an exported file's text. Returns { ok, error }. */

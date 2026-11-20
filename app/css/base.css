@@ -329,3 +329,81 @@ textarea.note {
   .trophy-row { grid-template-columns: 30px 1fr; }
   .row-side { grid-column: 2; flex-direction: row; align-items: center; }
 }
+
+/* v2 — audit strip */
+.audit { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; margin: 0 0 14px; }
+.audit-cell { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; }
+.audit-big { display: block; font-size: 19px; font-weight: 800; color: var(--text); }
+.audit-small { display: block; font-size: 11.5px; color: var(--muted); margin-top: 2px; line-height: 1.35; }
+
+/* v2 — tracker layout with persistent Next up sidebar */
+.tracker-layout { display: grid; grid-template-columns: 1fr 260px; gap: 16px; align-items: start; }
+.next-sidebar { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; position: sticky; top: 12px; }
+.next-sidebar h3 { margin: 0 0 6px; font-size: 17px; }
+.next-sidebar p { margin: 0 0 10px; font-size: 13px; color: var(--muted); }
+.next-side-list { list-style: none; margin: 0 0 10px; padding: 0; }
+.next-side-list li { font-size: 14px; padding: 6px 0; border-top: 1px solid var(--line); }
+.next-side-list li.done a { text-decoration: line-through; color: var(--muted); }
+
+/* v2 — citation superscripts and tags */
+.cite { font-size: 11px; font-weight: 700; }
+.cite a { color: var(--accent); text-decoration: none; }
+.tag.single { background: var(--warn-bg); color: var(--warn); border-color: var(--warn-line); }
+.tag.disputed { background: var(--warn-bg); color: var(--warn); border-color: var(--warn-line); }
+.tag.unconfirmed { background: var(--danger-bg); color: var(--danger); border-color: var(--danger-line); }
+.tag.hidden-tag { background: var(--panel2); }
+.tag.psn-num { background: var(--panel2); }
+
+/* v2 — steps, dispute and unconfirmed boxes */
+.steps ol { margin: 0; padding-left: 22px; }
+.steps li { margin: 0 0 8px; font-size: 15px; line-height: 1.55; }
+.dispute { background: var(--warn-bg); border: 1px solid var(--warn-line); border-radius: 12px; padding: 12px 14px; margin: 14px 0; }
+.dispute h3 { margin: 0 0 8px; font-size: 16px; color: var(--warn); }
+.dispute p { margin: 0 0 8px; font-size: 14px; }
+.unconfirmed { background: var(--danger-bg); border: 1px solid var(--danger-line); border-radius: 12px; padding: 12px 14px; margin: 14px 0; font-size: 14px; color: var(--danger); }
+.callout.partial { border-color: var(--warn-line); }
+.sources { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; margin: 14px 0; }
+.sources h3 { margin: 0 0 8px; font-size: 16px; }
+.sources ol { margin: 0 0 8px; padding-left: 22px; }
+.sources li { font-size: 14px; margin-bottom: 4px; }
+.sources p { font-size: 13.5px; color: var(--muted); margin: 0; }
+.sources-line { font-size: 13.5px; color: var(--muted); }
+
+/* v2 — roadmap stage steps and platinum summary */
+.stage-steps { margin: 0 0 10px; padding-left: 22px; }
+.stage-steps li { margin: 0 0 6px; font-size: 14.5px; line-height: 1.5; }
+.stage-sources { font-size: 12.5px; color: var(--muted); }
+.platinum-summary { margin-bottom: 16px; }
+.summary-row { display: flex; justify-content: space-between; gap: 12px; font-size: 14px; padding: 5px 0; border-top: 1px solid var(--line); }
+.summary-row span { color: var(--muted); }
+.summary-row b { text-align: right; }
+
+/* v2 — missables timeline */
+.timeline { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 0 0 16px; }
+.tl-cell { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; }
+.tl-cell h4 { margin: 0 0 6px; font-size: 15px; }
+.tl-cell ul { margin: 0 0 8px; padding-left: 18px; font-size: 13.5px; color: var(--muted); }
+.tl-cell li { margin-bottom: 3px; }
+.tl-last { font-size: 13.5px; margin: 0; }
+.tl-last.none { color: var(--muted); }
+
+/* v2 — sources tables and matrix */
+.table-wrap { overflow-x: auto; margin: 0 0 16px; }
+.sources-table, .matrix-table { width: 100%; border-collapse: collapse; font-size: 13.5px; background: var(--panel); }
+.sources-table th, .sources-table td, .matrix-table th, .matrix-table td { border: 1px solid var(--line); padding: 7px 9px; text-align: left; vertical-align: top; }
+.sources-table th, .matrix-table th { background: var(--panel2); font-size: 12.5px; }
+.matrix-table td.hit { font-weight: 700; color: var(--good); text-align: center; }
+.matrix-table td.miss { color: var(--muted); text-align: center; }
+.source-notes li { font-size: 14px; margin-bottom: 8px; line-height: 1.5; }
+.header-status { font-size: 12.5px; color: var(--muted); }
+
+@media (max-width: 900px) {
+  .audit { grid-template-columns: repeat(3, 1fr); }
+  .tracker-layout { grid-template-columns: 1fr; }
+  .next-sidebar { position: static; }
+  .timeline { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 560px) {
+  .audit { grid-template-columns: repeat(2, 1fr); }
+  .timeline { grid-template-columns: 1fr; }
+}

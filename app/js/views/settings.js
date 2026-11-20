@@ -21,7 +21,7 @@ export function renderSettings(root) {
     '<div class="row"><label class="toggle"><input id="set-hide-earned" type="checkbox"' +
     (s.hideEarned ? ' checked' : '') +
     '> Hide earned trophies in the tracker</label></div>' +
-    '<p>The spoiler setting hides the 17 story trophies (chapter and mission completions) until you earn them. The official list marks 28 trophies hidden on PlayStation; which ones is not published in the list this guide has, so this guide hides story trophies rather than guessing at the rest.</p></section>' +
+    '<p>The spoiler shield hides the 28 trophies PlayStation marks hidden (27 bronze, 1 gold) until you earn them. Names and descriptions stay masked while the shield is on.</p></section>' +
     '<section class="panel"><h3>Your progress</h3>' +
     '<p><b>' +
     progress.earned.length +
@@ -37,11 +37,11 @@ export function renderSettings(root) {
     '<p><b>PSN counts</b> — the progress targets PlayStation tracks (for example 42 Shooting Range challenges): <a href="' +
     esc(PSNPROFILES_URL) +
     '" target="_blank" rel="noopener">PSNProfiles</a>.</p>' +
-    '<p><b>Guides</b> — this guide\u2019s own words, written from the official descriptions. Where a place or step is not pinned down, the guide says so instead of inventing one. Nothing here is copied from another guide.</p>' +
+    '<p><b>Guides</b> — this guide\u2019s own words, written from the sources in the <a href="#/sources">Sources tab</a>: every step cites its sources, single-source steps are labelled, and anything unconfirmed is marked METHOD UNCONFIRMED. Where a place or step is not pinned down, the guide says so instead of inventing one. Nothing here is copied from another guide.</p>' +
     '<p><b>Artwork</b> — none of Rockstar\u2019s. The sunset look is this guide\u2019s own CSS and one inline SVG mark.</p></section>' +
     '<section class="panel"><h3>About this guide</h3>' +
     '<p><b>Sunset Platinum</b> is a free, open-source, offline guide and tracker for the 55 PlayStation 5 trophies of Grand Theft Auto VI. It runs from its own files, with the network off.</p>' +
-    '<p>Kinds are grouped from the official descriptions: story (chapter and mission completions), collectibles (things to find), activities (things to do) and world &amp; money (open-world and economy). Missable flags come from the descriptions too — see the Missables page for the rule and the caveat.</p></section>' +
+    '<p>Kinds are grouped from the official descriptions: story (chapter and mission completions), collectibles (things to find), activities (things to do) and world &amp; money (open-world and economy). Missable flags come from the played-through guides and the official descriptions — see the Missables page for the rule and the correction to v1.</p></section>' +
     '</div>';
 
   document.getElementById('set-theme').addEventListener('change', (event) => {
