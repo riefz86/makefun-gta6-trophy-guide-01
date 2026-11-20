@@ -1,2 +1,142 @@
-let trophies=[];let sourcesDoc={sources:[],agreed:[],differ:[],unconfirmed:[],readDate:""};function expandTrophy(t){return{id:t.i,name:t.name,description:t.d,grade:t.g,kind:t.k,story:!!t.y,hidden:!!t.h,chapter:t.c??null,opens:t.o??null,stage:t.st,psn:t.p?{target:t.p.t,unit:t.p.u}:null,missable:t.m?{tier:t.m.t,gate:{chapter:t.m.g.c,mission:t.m.g.m,note:t.m.g.n}}:null,disputed:t.x?{topic:t.x.t,a:{label:t.x.a.l,text:t.x.a.x,...t.x.a.s?{src:t.x.a.s}:{}},b:{label:t.x.b.l,text:t.x.b.x,...t.x.b.s?{src:t.x.b.s}:{}},decision:t.x.d}:null,unconfirmed:t.u??null,partial:t.r??null,guide:t.guide,steps:(t.s||[]).map(s=>({t:s.t,s:s.s}))}}function expandSources(doc){const side=s=>({label:s.l,text:s.x});return{sources:(doc.s||[]).map(s=>({id:s.i,site:s.w,title:s.t,type:s.y,read:s.r,url:s.u,note:s.n,reliability:s.l})),agreed:doc.a||[],differ:(doc.d||[]).map(d=>({topic:d.t,a:side(d.a),b:side(d.b),decision:d.d})),unconfirmed:doc.u||[],readDate:doc.r||""}}export async function loadTrophies(){const[tRes,sRes]=await Promise.all([fetch("data/trophies.json"),fetch("data/sources.json")]);const doc=await tRes.json();trophies=doc.trophies.map(expandTrophy);sourcesDoc=expandSources(await sRes.json());return trophies}export function allTrophies(){return trophies}export function trophyById(id){return trophies.find(t=>t.id===id)}export function sourcesRecord(){return sourcesDoc}export function sourceById(id){return sourcesDoc.sources.find(s=>s.id===id)}export function allSources(){return sourcesDoc.sources}export function trophiesInStage(n){return trophies.filter(t=>t.stage===n)}export function missableTrophies(){return trophies.filter(t=>t.missable).sort((a,b)=>(a.missable.tier==="possibly"?0:1)-(b.missable.tier==="possibly"?0:1)||a.id-b.id)}export function possiblyMissableTrophies(){return trophies.filter(t=>t.missable&&t.missable.tier==="possibly")}export function watchTrophies(){return trophies.filter(t=>t.missable&&t.missable.tier==="watch")}export function disputedTrophies(){return trophies.filter(t=>t.disputed)}export function hiddenTrophies(){return trophies.filter(t=>t.hidden)}export function storyTrophies(){return trophies.filter(t=>t.story)}export function gradeCounts(earnedIds){const earned=new Set(earnedIds);const counts={};for(const t of trophies){counts[t.grade]=counts[t.grade]||{total:0,earned:0};counts[t.grade].total+=1;if(earned.has(t.id))counts[t.grade].earned+=1}return counts}export function guideSources(t){const seen=[];for(const step of t.steps||[]){for(const id of step.s||[]){if(seen.indexOf(id)===-1)seen.push(id)}}return seen}export function guidesUsingSource(sourceId){return trophies.filter(t=>guideSources(t).indexOf(sourceId)!==-1).length}export function matrixCell(t,sourceId){return(t.steps||[]).filter(step=>(step.s||[]).indexOf(sourceId)!==-1).length}export function countersTotals(counts){let current=0;let target=0;for(const t of trophies){if(!t.psn)continue;target+=t.psn.target;current+=Math.min(counts[t.id]||0,t.psn.target)}return{current:current,target:target,pct:target?Math.round(current/target*100):0}}export function auditStats(){const official=trophies.filter(t=>t.name&&t.description&&t.grade).length;let total=0;let cited=0;let twoPlus=0;for(const t of trophies){for(const step of t.steps||[]){total+=1;if(step.s&&step.s.length>0)cited+=1;if(step.s&&step.s.length>=2)twoPlus+=1}}const disputeTopics=new Set(trophies.filter(t=>t.disputed).map(t=>t.disputed.topic));const sites=new Set(sourcesDoc.sources.map(s=>s.site));return{official:official,totalTrophies:trophies.length,totalClaims:total,citedClaims:cited,twoPlusClaims:twoPlus,sourcePages:sourcesDoc.sources.length,sourceSites:sites.size,readDate:sourcesDoc.readDate,disputes:disputeTopics.size,disputedTrophies:trophies.filter(t=>t.disputed).length,unconfirmed:trophies.filter(t=>t.unconfirmed).length,possiblyMissable:possiblyMissableTrophies().length,watch:watchTrophies().length}}
-// v3: slim first load, content unchanged
+let list = [];
+let src = { sources: [], agreed: [], differ: [], unconfirmed: [], readDate: "" };
+let pending = null;
+
+async function getJson(url) {
+  const res = await fetch(url);
+  return res.json();
+}
+
+function oneSide(s) {
+  const out = { label: s.l, text: s.x };
+  if (s.s) out.src = s.s;
+  return out;
+}
+
+function twoWay(x) {
+  return { topic: x.t, a: oneSide(x.a), b: oneSide(x.b), decision: x.d };
+}
+
+function decodeTrophy(r) {
+  const t = {
+    id: r.i, name: r.name, description: r.d, grade: r.g, kind: r.k,
+    story: !!r.y, hidden: !!r.h, chapter: r.c ?? null, opens: r.o ?? null,
+    stage: r.st, psn: null, missable: null, disputed: null,
+    unconfirmed: r.u ?? null, partial: r.r ?? null,
+    guide: r.guide, steps: (r.s || []).map(s => ({ t: s.t, s: s.s }))
+  };
+  if (r.p) t.psn = { target: r.p.t, unit: r.p.u };
+  if (r.m) t.missable = { tier: r.m.t, gate: { chapter: r.m.g.c, mission: r.m.g.m, note: r.m.g.n } };
+  if (r.x) t.disputed = twoWay(r.x);
+  return t;
+}
+
+function decodeSources(d) {
+  return {
+    sources: (d.s || []).map(s => ({ id: s.i, site: s.w, title: s.t, type: s.y, read: s.r, url: s.u, note: s.n, reliability: s.l })),
+    agreed: d.a || [],
+    differ: (d.d || []).map(twoWay),
+    unconfirmed: d.u || [],
+    readDate: d.r || ""
+  };
+}
+
+async function fill() {
+  const [td, sd] = await Promise.all([getJson("data/trophies.json"), getJson("data/sources.json")]);
+  list = td.trophies.map(decodeTrophy);
+  src = decodeSources(sd);
+  return list;
+}
+
+export function loadTrophies() {
+  if (!pending) pending = fill().catch(err => { pending = null; throw err; });
+  return pending;
+}
+
+export function allTrophies() { return list; }
+export function trophyById(id) { return list.find(t => t.id === id); }
+export function sourcesRecord() { return src; }
+export function sourceById(id) { return src.sources.find(s => s.id === id); }
+export function allSources() { return src.sources; }
+export function trophiesInStage(n) { return list.filter(t => t.stage === n); }
+
+function rankMissable(t) {
+  return t.missable && t.missable.tier === "possibly" ? 0 : 1;
+}
+
+export function missableTrophies() {
+  return list.filter(t => t.missable).sort((a, b) => rankMissable(a) - rankMissable(b) || a.id - b.id);
+}
+export function possiblyMissableTrophies() {
+  return list.filter(t => t.missable && t.missable.tier === "possibly");
+}
+export function watchTrophies() {
+  return list.filter(t => t.missable && t.missable.tier === "watch");
+}
+export function disputedTrophies() { return list.filter(t => t.disputed); }
+export function hiddenTrophies() { return list.filter(t => t.hidden); }
+export function storyTrophies() { return list.filter(t => t.story); }
+
+export function gradeCounts(ids) {
+  const have = new Set(ids);
+  const out = {};
+  for (const t of list) {
+    const g = out[t.grade] || (out[t.grade] = { total: 0, earned: 0 });
+    g.total += 1;
+    if (have.has(t.id)) g.earned += 1;
+  }
+  return out;
+}
+
+export function guideSources(t) {
+  const ids = [];
+  for (const step of t.steps || []) {
+    for (const id of step.s || []) {
+      if (!ids.includes(id)) ids.push(id);
+    }
+  }
+  return ids;
+}
+
+export function guidesUsingSource(id) {
+  return list.filter(t => guideSources(t).includes(id)).length;
+}
+
+export function matrixCell(t, id) {
+  return (t.steps || []).filter(s => (s.s || []).includes(id)).length;
+}
+
+export function countersTotals(counts) {
+  let cur = 0, goal = 0;
+  for (const t of list) {
+    if (!t.psn) continue;
+    goal += t.psn.target;
+    cur += Math.min(counts[t.id] || 0, t.psn.target);
+  }
+  return { current: cur, target: goal, pct: goal ? Math.round(cur / goal * 100) : 0 };
+}
+
+export function auditStats() {
+  let total = 0, cited = 0, two = 0;
+  for (const t of list) {
+    for (const s of t.steps || []) {
+      total += 1;
+      if (s.s && s.s.length) cited += 1;
+      if (s.s && s.s.length > 1) two += 1;
+    }
+  }
+  const topics = new Set();
+  const sites = new Set(src.sources.map(s => s.site));
+  for (const t of list) if (t.disputed) topics.add(t.disputed.topic);
+  return {
+    official: list.filter(t => t.name && t.description && t.grade).length,
+    totalTrophies: list.length,
+    totalClaims: total, citedClaims: cited, twoPlusClaims: two,
+    sourcePages: src.sources.length, sourceSites: sites.size, readDate: src.readDate,
+    disputes: topics.size,
+    disputedTrophies: list.filter(t => t.disputed).length,
+    unconfirmed: list.filter(t => t.unconfirmed).length,
+    possiblyMissable: possiblyMissableTrophies().length,
+    watch: watchTrophies().length
+  };
+}
