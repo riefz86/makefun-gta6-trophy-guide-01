@@ -1,4 +1,5 @@
 // Sunset Platinum — a gta6-trophy-guide-01 entry (Node 22, standard library only).
+// v3: first-load slimming — the shell and every view load on demand; content unchanged.
 //
 // The guide is this directory's app/ folder: plain static files a browser opens at
 // app/index.html (ES modules, CSS, no build step), offline — it loads nothing over the

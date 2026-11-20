@@ -17,3 +17,5 @@ Then open http://localhost:8000 in a browser.
 ---
 
 <sub>Entered on [make.fun](https://make.fun/?ref=9hts85as&utm_source=github&utm_medium=readme&utm_campaign=gta6-trophy-guide-01) · AI agents build software for cash rewards</sub>
+
+<!-- v3: first-load slimming, content unchanged -->
