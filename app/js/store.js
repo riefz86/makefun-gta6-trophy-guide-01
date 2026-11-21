@@ -1,30 +1,35 @@
 import { STORAGE_KEY } from "./config.js";
 
-// Sunset Platinum — progress saved in this browser. Retry: one clean recording.
-const freshSettings = () => ({ theme: "night", spoilers: true, hideEarned: false });
-const freshProgress = () => ({ earned: [], counts: {}, notes: {}, next: [], settings: freshSettings() });
-const asRecord = (value) => (value !== null && typeof value === "object" ? value : {});
-const asArray = (value) => (Array.isArray(value) ? value : []);
-const has = (list, id) => list.includes(id);
+const defaultSettings = () => ({ theme: "night", spoilers: true, hideEarned: false });
 
-let progress = freshProgress();
+const defaultProgress = () => ({ earned: [], counts: {}, notes: {}, next: [], settings: defaultSettings() });
 
-const mergeStored = (parsed) => {
-  const merged = { ...freshProgress(), ...parsed };
-  merged.settings = { ...freshSettings(), ...asRecord(parsed.settings) };
-  merged.earned = asArray(parsed.earned);
-  merged.counts = asRecord(parsed.counts);
-  merged.notes = asRecord(parsed.notes);
-  merged.next = asArray(parsed.next);
-  return merged;
+const toObject = (value) => (value !== null && typeof value === "object" ? value : {});
+const toList = (value) => (Array.isArray(value) ? value : []);
+
+let progress = defaultProgress();
+
+const normalize = (parsed) => {
+  const out = { ...defaultProgress(), ...parsed };
+  out.settings = { ...defaultSettings(), ...toObject(parsed.settings) };
+  out.earned = toList(parsed.earned);
+  out.counts = toObject(parsed.counts);
+  out.notes = toObject(parsed.notes);
+  out.next = toList(parsed.next);
+  return out;
+};
+
+const flip = (list, id) => {
+  if (list.includes(id)) return list.filter((entry) => entry !== id);
+  return [...list, id];
 };
 
 export const loadProgress = () => {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) progress = mergeStored(JSON.parse(raw));
+    if (raw) progress = normalize(JSON.parse(raw));
   } catch {
-    progress = freshProgress();
+    progress = defaultProgress();
   }
   return progress;
 };
@@ -40,12 +45,10 @@ export const saveProgress = () => {
 };
 
 export const earnedCount = () => progress.earned.length;
-export const isEarned = (id) => has(progress.earned, id);
+export const isEarned = (id) => progress.earned.includes(id);
 
 export const toggleEarned = (id) => {
-  progress.earned = progress.earned.includes(id)
-    ? progress.earned.filter((entry) => entry !== id)
-    : [...progress.earned, id];
+  progress.earned = flip(progress.earned, id);
   saveProgress();
   return isEarned(id);
 };
@@ -53,7 +56,8 @@ export const toggleEarned = (id) => {
 export const getCount = (id) => progress.counts[id] || 0;
 
 export const setCount = (id, value, target) => {
-  const clamped = Math.max(0, Math.min(target, Math.round(value) || 0));
+  const rounded = Math.round(value) || 0;
+  const clamped = Math.max(0, Math.min(target, rounded));
   if (clamped === 0) delete progress.counts[id];
   else progress.counts[id] = clamped;
   saveProgress();
@@ -69,12 +73,10 @@ export const setNote = (id, text) => {
   saveProgress();
 };
 
-export const isNext = (id) => has(progress.next, id);
+export const isNext = (id) => progress.next.includes(id);
 
 export const toggleNext = (id) => {
-  progress.next = progress.next.includes(id)
-    ? progress.next.filter((entry) => entry !== id)
-    : [...progress.next, id];
+  progress.next = flip(progress.next, id);
   saveProgress();
   return isNext(id);
 };
@@ -92,14 +94,14 @@ export const importProgress = (text) => {
   if (!incoming || !Array.isArray(incoming.earned)) {
     return { ok: false, error: "That file is not a Sunset Platinum export." };
   }
-  const merged = { ...freshProgress(), ...incoming };
-  merged.settings = { ...freshSettings(), ...asRecord(incoming.settings) };
+  const merged = { ...defaultProgress(), ...incoming };
+  merged.settings = { ...defaultSettings(), ...toObject(incoming.settings) };
   progress = merged;
   saveProgress();
   return { ok: true };
 };
 
 export const resetProgress = () => {
-  progress = freshProgress();
+  progress = defaultProgress();
   saveProgress();
 };
