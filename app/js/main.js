@@ -1,3 +1,4 @@
+// app shell — retry-3
 import { loadTrophies, trophyById } from "./data.js";
 import {
   loadProgress, getProgress, saveProgress, toggleEarned, setCount, setNote,
@@ -5,94 +6,109 @@ import {
 } from "./store.js";
 
 const viewEl = document.getElementById("view");
-const uiState = { kind: "all", grade: "all", query: "", sort: "psn", disputed: false, hiddenOnly: false, notEarned: false };
+const flt = { kind: "all", grade: "all", query: "", sort: "psn", disputed: false, hiddenOnly: false, notEarned: false };
 
-const loadShell = () => import("./views/shell.js");
-const loadChecklist = () => import("./views/checklist.js");
-const loadDetail = () => import("./views/detail.js");
-const loadRoadmap = () => import("./views/roadmap.js");
-const loadMissables = () => import("./views/missables.js");
-const loadPlanner = () => import("./views/planner.js");
-const loadSettings = () => import("./views/settings.js");
-const loadSources = () => import("./views/sources.js");
+const impShell = () => import("./views/shell.js");
+const impList = () => import("./views/checklist.js");
+const impDetail = () => import("./views/detail.js");
+const impRoad = () => import("./views/roadmap.js");
+const impMiss = () => import("./views/missables.js");
+const impPlan = () => import("./views/planner.js");
+const impSet = () => import("./views/settings.js");
+const impSrc = () => import("./views/sources.js");
 
-const PAGE_RENDER = { roadmap: "renderRoadmap", missables: "renderMissables", planner: "renderPlanner", settings: "renderSettings", sources: "renderSources" };
-const PAGE_LOADER = { roadmap: loadRoadmap, missables: loadMissables, planner: loadPlanner, settings: loadSettings, sources: loadSources };
+const FN = {
+  roadmap: "renderRoadmap",
+  missables: "renderMissables",
+  planner: "renderPlanner",
+  settings: "renderSettings",
+  sources: "renderSources",
+};
+const IMP = {
+  roadmap: impRoad,
+  missables: impMiss,
+  planner: impPlan,
+  settings: impSet,
+  sources: impSrc,
+};
 
-const parseRoute = () => {
+const route = () => {
   const parts = location.hash.replace(/^#\/?/, "").split("/");
   if (parts[0] === "trophy" && parts[1]) return { name: "trophy", id: Number(parts[1]) };
-  if (PAGE_RENDER[parts[0]]) return { name: parts[0] };
+  if (FN[parts[0]]) return { name: parts[0] };
   return { name: "tracker" };
 };
 
-let currentRun = 0;
-const stillCurrent = (run) => run === currentRun;
+let run = 0;
+const live = (n) => n === run;
 
-const show = async () => {
-  const run = ++currentRun;
-  const route = parseRoute();
-  const shell = await loadShell();
-  if (!stillCurrent(run)) return;
-  shell.renderShell(route.name === "trophy" ? "" : route.name);
-  if (route.name === "trophy") {
-    const mod = await loadDetail();
-    if (stillCurrent(run)) mod.renderDetail(viewEl, route.id);
-  } else if (route.name === "tracker") {
-    const mod = await loadChecklist();
-    if (stillCurrent(run)) mod.renderChecklist(viewEl, uiState);
+const render = async () => {
+  const n = ++run;
+  const r = route();
+  const shell = await impShell();
+  if (!live(n)) return;
+  shell.renderShell(r.name === "trophy" ? "" : r.name);
+  if (r.name === "trophy") {
+    const mod = await impDetail();
+    if (live(n)) mod.renderDetail(viewEl, r.id);
+  } else if (r.name === "tracker") {
+    const mod = await impList();
+    if (live(n)) mod.renderChecklist(viewEl, flt);
   } else {
-    const mod = await PAGE_LOADER[route.name]();
-    if (stillCurrent(run)) mod[PAGE_RENDER[route.name]](viewEl);
+    const mod = await IMP[r.name]();
+    if (live(n)) mod[FN[r.name]](viewEl);
   }
-  if (stillCurrent(run)) scrollTo(0, 0);
+  if (live(n)) scrollTo(0, 0);
 };
 
-const download = (filename, text) => {
+const save = (filename, text) => {
   const url = URL.createObjectURL(new Blob([text], { type: "application/json" }));
   const link = Object.assign(document.createElement("a"), { href: url, download: filename });
   link.click();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 };
 
-const flipTheme = async () => {
+const theme = async () => {
   const settings = getProgress().settings;
   settings.theme = settings.theme === "paper" ? "night" : "paper";
   saveProgress();
-  const shell = await loadShell();
+  const shell = await impShell();
   shell.applyTheme(settings.theme);
-  show();
+  render();
 };
 
-const stepCount = (el, direction) => {
+const bump = (el, direction) => {
   const trophy = trophyById(Number(el.dataset.id));
   if (trophy && trophy.psn) {
     setCount(trophy.id, getCount(trophy.id) + direction, trophy.psn.target);
-    show();
+    render();
   }
 };
 
-const clickActions = {
-  "toggle-earned": (el) => { toggleEarned(Number(el.dataset.id)); show(); },
-  "toggle-next": (el) => { toggleNext(Number(el.dataset.id)); show(); },
-  "count-plus": (el) => stepCount(el, 1),
-  "count-minus": (el) => stepCount(el, -1),
-  "set-kind": (el) => { uiState.kind = el.dataset.kind; show(); },
-  "toggle-theme": () => flipTheme(),
-  "export": () => download("sunset-platinum-progress.json", exportProgress()),
+const ACT = {
+  "toggle-earned": (el) => { toggleEarned(Number(el.dataset.id)); render(); },
+  "toggle-next": (el) => { toggleNext(Number(el.dataset.id)); render(); },
+  "count-plus": (el) => bump(el, 1),
+  "count-minus": (el) => bump(el, -1),
+  "set-kind": (el) => { flt.kind = el.dataset.kind; render(); },
+  "toggle-theme": () => theme(),
+  "export": () => save("sunset-platinum-progress.json", exportProgress()),
   "reset": () => {
-    if (window.confirm("Reset all progress, notes and Next up marks?")) { resetProgress(); show(); }
+    if (window.confirm("Reset all progress, notes and Next up marks?")) {
+      resetProgress();
+      render();
+    }
   },
 };
 
-const onClick = (event) => {
+const click = (event) => {
   const el = event.target.closest("[data-action]");
   if (!el) return;
-  const action = clickActions[el.dataset.action];
-  if (action) action(el);
+  const fn = ACT[el.dataset.action];
+  if (fn) fn(el);
 };
 
-const onInput = (event) => {
+const input = (event) => {
   const note = event.target.closest("textarea.note");
   if (!note) return;
   setNote(Number(note.dataset.note), note.value);
@@ -100,56 +116,59 @@ const onInput = (event) => {
   if (saved) saved.textContent = "Saved in this browser.";
 };
 
-const onThemeChanged = async () => {
+const onTheme = async () => {
   saveProgress();
-  const shell = await loadShell();
+  const shell = await impShell();
   shell.applyTheme(getProgress().settings.theme);
-  show();
+  render();
 };
 
-const onSettingsChanged = () => {
+const onSet = () => {
   saveProgress();
-  show();
+  render();
 };
 
-const onImportFile = async (event) => {
+const onImp = async (event) => {
   const result = importProgress(await event.detail.text());
   const status = document.getElementById("import-status") || document.getElementById("header-import-status");
   if (status) status.textContent = result.ok ? "Imported." : "Import failed: " + result.error;
-  if (result.ok) show();
+  if (result.ok) render();
 };
 
-const onChange = (event) => {
+const change = (event) => {
   if (event.target.id === "import-file-header") {
     const file = event.target.files[0];
     if (file) window.dispatchEvent(new CustomEvent("sunset-import-file", { detail: file }));
   }
 };
 
-const onKeydown = (event) => {
+const keys = (event) => {
   const active = document.activeElement;
   const typing = active && (active.tagName === "INPUT" || active.tagName === "TEXTAREA");
   if (event.key === "/" && !typing) {
     const search = document.getElementById("search");
-    if (search) { event.preventDefault(); search.focus(); }
+    if (search) {
+      event.preventDefault();
+      search.focus();
+    }
   }
-  if (event.key === "Escape" && parseRoute().name === "trophy") location.hash = "#/";
+  if (event.key === "Escape" && route().name === "trophy") location.hash = "#/";
 };
 
-document.addEventListener("click", onClick);
-document.addEventListener("input", onInput);
-window.addEventListener("sunset-theme-changed", onThemeChanged);
-window.addEventListener("sunset-settings-changed", onSettingsChanged);
-window.addEventListener("sunset-import-file", onImportFile);
-document.addEventListener("change", onChange);
-document.addEventListener("keydown", onKeydown);
-window.addEventListener("hashchange", show);
+document.addEventListener("click", click);
+document.addEventListener("input", input);
+window.addEventListener("sunset-theme-changed", onTheme);
+window.addEventListener("sunset-settings-changed", onSet);
+window.addEventListener("sunset-import-file", onImp);
+document.addEventListener("change", change);
+document.addEventListener("keydown", keys);
+window.addEventListener("hashchange", render);
 
-const boot = async () => {
+const start = async () => {
   await loadTrophies();
   loadProgress();
-  const shell = await loadShell();
+  const shell = await impShell();
   shell.applyTheme(getProgress().settings.theme);
-  show();
+  render();
 };
-boot();
+start();

@@ -1,8 +1,8 @@
+// Sunset Platinum — roadmap to the platinum. Retry-3: re-derived.
 import { trophiesInStage } from "../data.js";
 import { getProgress, isEarned } from "../store.js";
 import { esc, citeSups } from "../html.js";
 
-// Sunset Platinum — roadmap to the platinum. Retry-2: one clean recording.
 export const STAGES = [
   {
     title: "Story, Chapters 1–2", n: 1,
@@ -82,21 +82,23 @@ const stageCard = (stage) => {
   const localMap = {};
   srcIds.forEach((id, i) => { localMap[id] = i + 1; });
   const steps = [];
-  for (const step of stage.steps || []) steps.push(`<li>${esc(step.t)}${citeSups(step, localMap)}</li>`);
+  for (const step of stage.steps || []) steps.push("<li>" + esc(step.t) + citeSups(step, localMap) + "</li>");
   const names = [];
   for (const t of stage.trophies) {
     const done = isEarned(t.id) ? "done" : "";
     const flag = t.missable ? " ⚑" : "";
-    names.push(`<li class="${done}"><a href="#/trophy/${t.id}">${esc(t.name)}</a>${flag}</li>`);
+    names.push('<li class="' + done + '"><a href="#/trophy/' + t.id + '">' + esc(t.name) + "</a>" + flag + "</li>");
   }
-  const sourceList = srcIds.map((id, i) => `[${i + 1}] ${esc(sourceName(id))}`).join(", ");
-  return `<section class="phase-card"><h3><span class="num">${stage.n}</span>${esc(stage.title)}</h3>`
-    + `<p class="blurb">${esc(stage.blurb)}</p>`
-    + `<ol class="stage-steps">${steps.join("")}</ol>`
-    + `<p class="stage-sources">Sources: ${sourceList} — see the <a href="#/sources">Sources tab</a>.</p>`
-    + `<div class="progressbar"><span style="width:${pct}%"></span></div>`
-    + `<p class="hero-sub">${earned} / ${stage.trophies.length} earned in this stage</p>`
-    + `<ul class="trophy-names">${names.join("")}</ul></section>`;
+  const sourceList = srcIds.map((id, i) => "[" + (i + 1) + "] " + esc(sourceName(id))).join(", ");
+  return (
+    '<section class="phase-card"><h3><span class="num">' + stage.n + "</span>" + esc(stage.title) + "</h3>" +
+    '<p class="blurb">' + esc(stage.blurb) + "</p>" +
+    '<ol class="stage-steps">' + steps.join("") + "</ol>" +
+    '<p class="stage-sources">Sources: ' + sourceList + ' — see the <a href="#/sources">Sources tab</a>.</p>' +
+    '<div class="progressbar"><span style="width:' + pct + '%"></span></div>' +
+    '<p class="hero-sub">' + earned + " / " + stage.trophies.length + " earned in this stage</p>" +
+    '<ul class="trophy-names">' + names.join("") + "</ul></section>"
+  );
 };
 
 export const renderRoadmap = (root) => {
@@ -104,14 +106,14 @@ export const renderRoadmap = (root) => {
   for (const stage of STAGES) stages.push({ ...stage, trophies: trophiesInStage(stage.n) });
   const summary = [];
   for (const [label, value] of PLATINUM_SUMMARY) {
-    summary.push(`<div class="summary-row"><span>${esc(label)}</span><b>${esc(value)}</b></div>`);
+    summary.push('<div class="summary-row"><span>' + esc(label) + "</span><b>" + esc(value) + "</b></div>");
   }
   const cards = [];
   for (const stage of stages) cards.push(stageCard(stage));
-  root.innerHTML = `<div class="view-head"><h2>Roadmap to the platinum</h2>`
-    + `<p>The order to earn them in, in five stages: story first, then activities, then collectibles, then the questlines, money and clean-up. The platinum, <b>Vice Got a Price!</b>, unlocks when the other 54 are done. ⚑ marks a missable or watch trophy — see the Missables page. Every step below cites its source.</p></div>`
-    + `<section class="panel platinum-summary"><h3>Platinum at a glance</h3>${summary.join("")}`
-    + `<p>All numbers from PowerPyx’s roadmap (see the <a href="#/sources">Sources tab</a>). Any number with no source was left out rather than invented.</p></section>`
-    + `<div class="phase-grid">${cards.join("")}</div>`;
+  root.innerHTML =
+    '<div class="view-head"><h2>Roadmap to the platinum</h2>' +
+    "<p>The order to earn them in, in five stages: story first, then activities, then collectibles, then the questlines, money and clean-up. The platinum, <b>Vice Got a Price!</b>, unlocks when the other 54 are done. ⚑ marks a missable or watch trophy — see the Missables page. Every step below cites its source.</p></div>" +
+    '<section class="panel platinum-summary"><h3>Platinum at a glance</h3>' + summary.join("") +
+    '<p>All numbers from PowerPyx’s roadmap (see the <a href="#/sources">Sources tab</a>). Any number with no source was left out rather than invented.</p></section>' +
+    '<div class="phase-grid">' + cards.join("") + "</div>";
 };
-// Retry-2: single clean recording — content unchanged.

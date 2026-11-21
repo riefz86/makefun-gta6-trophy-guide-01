@@ -1,5 +1,5 @@
 // Sunset Platinum — a gta6-trophy-guide-01 entry (Node 22, standard library only).
-// Retry-2: one clean recording — the shell and every view load on demand.
+// Retry-3: re-derived in one clean recording — the shell and every view load on demand.
 //
 // The guide lives in this directory's app/ folder: plain static files a browser opens
 // at app/index.html (ES modules and CSS, no build step), offline — it loads nothing
@@ -26,14 +26,14 @@ import { buildDossier } from './vendor/makefun-frontend.ts';
 const here = fileURLToPath(new URL('.', import.meta.url));
 const outDir = process.env.MAKEFUN_OUTPUT_DIR ?? '/output';
 
-const mustExist = (relPath, message) => {
+const requireFile = (relPath, message) => {
   if (!existsSync(join(here, relPath))) throw new Error(message);
 };
 
 // The Sources tab and the audit strip read app/data/sources.json, so refuse to
 // hand in a guide that lost it.
-mustExist('app/data/sources.json', 'app/data/sources.json is missing — the Sources tab would be empty');
-mustExist('app/data/trophies.json', 'app/data/trophies.json is missing — the guide has no trophies');
+requireFile('app/data/sources.json', 'app/data/sources.json is missing — the Sources tab would be empty');
+requireFile('app/data/trophies.json', 'app/data/trophies.json is missing — the guide has no trophies');
 
 mkdirSync(outDir, { recursive: true });
 cpSync(join(here, 'app'), join(outDir, 'app'), { recursive: true });

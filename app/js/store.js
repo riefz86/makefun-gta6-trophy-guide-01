@@ -1,87 +1,85 @@
+// saved progress — retry-3
 import { STORAGE_KEY } from "./config.js";
 
-const defaultSettings = () => ({ theme: "night", spoilers: true, hideEarned: false });
+const defSet = () => ({ theme: "night", spoilers: true, hideEarned: false });
+const defProg = () => ({ earned: [], counts: {}, notes: {}, next: [], settings: defSet() });
 
-const defaultProgress = () => ({ earned: [], counts: {}, notes: {}, next: [], settings: defaultSettings() });
+const asObj = (v) => (v !== null && typeof v === "object" ? v : {});
+const asArr = (v) => (Array.isArray(v) ? v : []);
 
-const toObject = (value) => (value !== null && typeof value === "object" ? value : {});
-const toList = (value) => (Array.isArray(value) ? value : []);
+let state = defProg();
 
-let progress = defaultProgress();
-
-const normalize = (parsed) => {
-  const out = { ...defaultProgress(), ...parsed };
-  out.settings = { ...defaultSettings(), ...toObject(parsed.settings) };
-  out.earned = toList(parsed.earned);
-  out.counts = toObject(parsed.counts);
-  out.notes = toObject(parsed.notes);
-  out.next = toList(parsed.next);
+const norm = (parsed) => {
+  const out = { ...defProg(), ...parsed };
+  out.settings = { ...defSet(), ...asObj(parsed.settings) };
+  out.earned = asArr(parsed.earned);
+  out.counts = asObj(parsed.counts);
+  out.notes = asObj(parsed.notes);
+  out.next = asArr(parsed.next);
   return out;
 };
 
-const flip = (list, id) => {
-  if (list.includes(id)) return list.filter((entry) => entry !== id);
-  return [...list, id];
-};
+const tog = (list, id) =>
+  list.includes(id) ? list.filter((entry) => entry !== id) : [...list, id];
 
 export const loadProgress = () => {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) progress = normalize(JSON.parse(raw));
+    if (raw) state = norm(JSON.parse(raw));
   } catch {
-    progress = defaultProgress();
+    state = defProg();
   }
-  return progress;
+  return state;
 };
 
-export const getProgress = () => progress;
+export const getProgress = () => state;
 
 export const saveProgress = () => {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(progress));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   } catch {
-    /* private mode: keep going without saving */
+    // Private mode: keep going without saving.
   }
 };
 
-export const earnedCount = () => progress.earned.length;
-export const isEarned = (id) => progress.earned.includes(id);
+export const earnedCount = () => state.earned.length;
+export const isEarned = (id) => state.earned.includes(id);
 
 export const toggleEarned = (id) => {
-  progress.earned = flip(progress.earned, id);
+  state.earned = tog(state.earned, id);
   saveProgress();
   return isEarned(id);
 };
 
-export const getCount = (id) => progress.counts[id] || 0;
+export const getCount = (id) => state.counts[id] || 0;
 
 export const setCount = (id, value, target) => {
-  const rounded = Math.round(value) || 0;
-  const clamped = Math.max(0, Math.min(target, rounded));
-  if (clamped === 0) delete progress.counts[id];
-  else progress.counts[id] = clamped;
+  const clamped = Math.max(0, Math.min(target, Math.round(value) || 0));
+  if (clamped === 0) delete state.counts[id];
+  else state.counts[id] = clamped;
   saveProgress();
   return clamped;
 };
 
-export const getNote = (id) => progress.notes[id] || "";
+export const getNote = (id) => state.notes[id] || "";
 
 export const setNote = (id, text) => {
   const trimmed = (text || "").trim();
-  if (trimmed === "") delete progress.notes[id];
-  else progress.notes[id] = trimmed;
+  if (trimmed === "") delete state.notes[id];
+  else state.notes[id] = trimmed;
   saveProgress();
 };
 
-export const isNext = (id) => progress.next.includes(id);
+export const isNext = (id) => state.next.includes(id);
 
 export const toggleNext = (id) => {
-  progress.next = flip(progress.next, id);
+  state.next = tog(state.next, id);
   saveProgress();
   return isNext(id);
 };
 
-export const exportProgress = () => JSON.stringify({ app: "sunset-platinum", version: 2, progress }, null, 2);
+export const exportProgress = () =>
+  JSON.stringify({ app: "sunset-platinum", version: 2, progress: state }, null, 2);
 
 export const importProgress = (text) => {
   let parsed;
@@ -94,14 +92,14 @@ export const importProgress = (text) => {
   if (!incoming || !Array.isArray(incoming.earned)) {
     return { ok: false, error: "That file is not a Sunset Platinum export." };
   }
-  const merged = { ...defaultProgress(), ...incoming };
-  merged.settings = { ...defaultSettings(), ...toObject(incoming.settings) };
-  progress = merged;
+  const merged = { ...defProg(), ...incoming };
+  merged.settings = { ...defSet(), ...asObj(incoming.settings) };
+  state = merged;
   saveProgress();
   return { ok: true };
 };
 
 export const resetProgress = () => {
-  progress = defaultProgress();
+  state = defProg();
   saveProgress();
 };
