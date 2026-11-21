@@ -1,142 +1,140 @@
-let list = [];
-let src = { sources: [], agreed: [], differ: [], unconfirmed: [], readDate: "" };
-let pending = null;
+// Sunset Platinum — trophy data layer. Retry: one clean recording.
+let trophies = [];
+let sources = { sources: [], agreed: [], differ: [], unconfirmed: [], readDate: "" };
+let loading = null;
 
-async function getJson(url) {
-  const res = await fetch(url);
-  return res.json();
-}
+const fetchJson = async (url) => (await fetch(url)).json();
 
-function oneSide(s) {
-  const out = { label: s.l, text: s.x };
-  if (s.s) out.src = s.s;
-  return out;
-}
+const sideOf = (entry) => {
+  const side = { label: entry.l, text: entry.x };
+  if (entry.s) side.src = entry.s;
+  return side;
+};
 
-function twoWay(x) {
-  return { topic: x.t, a: oneSide(x.a), b: oneSide(x.b), decision: x.d };
-}
+const disputeOf = (entry) => ({ topic: entry.t, a: sideOf(entry.a), b: sideOf(entry.b), decision: entry.d });
 
-function decodeTrophy(r) {
-  const t = {
-    id: r.i, name: r.name, description: r.d, grade: r.g, kind: r.k,
-    story: !!r.y, hidden: !!r.h, chapter: r.c ?? null, opens: r.o ?? null,
-    stage: r.st, psn: null, missable: null, disputed: null,
-    unconfirmed: r.u ?? null, partial: r.r ?? null,
-    guide: r.guide, steps: (r.s || []).map(s => ({ t: s.t, s: s.s }))
-  };
-  if (r.p) t.psn = { target: r.p.t, unit: r.p.u };
-  if (r.m) t.missable = { tier: r.m.t, gate: { chapter: r.m.g.c, mission: r.m.g.m, note: r.m.g.n } };
-  if (r.x) t.disputed = twoWay(r.x);
-  return t;
-}
+const trophyOf = (row) => {
+  const trophy = {};
+  trophy.id = row.i;
+  trophy.name = row.name;
+  trophy.description = row.d;
+  trophy.grade = row.g;
+  trophy.kind = row.k;
+  trophy.story = Boolean(row.y);
+  trophy.hidden = Boolean(row.h);
+  trophy.chapter = row.c === undefined ? null : row.c;
+  trophy.opens = row.o === undefined ? null : row.o;
+  trophy.stage = row.st;
+  trophy.psn = null;
+  trophy.missable = null;
+  trophy.disputed = null;
+  trophy.unconfirmed = row.u === undefined ? null : row.u;
+  trophy.partial = row.r === undefined ? null : row.r;
+  trophy.guide = row.guide;
+  trophy.steps = (row.s || []).map((step) => ({ t: step.t, s: step.s }));
+  if (row.p) trophy.psn = { target: row.p.t, unit: row.p.u };
+  if (row.m) trophy.missable = { tier: row.m.t, gate: { chapter: row.m.g.c, mission: row.m.g.m, note: row.m.g.n } };
+  if (row.x) trophy.disputed = disputeOf(row.x);
+  return trophy;
+};
 
-function decodeSources(d) {
-  return {
-    sources: (d.s || []).map(s => ({ id: s.i, site: s.w, title: s.t, type: s.y, read: s.r, url: s.u, note: s.n, reliability: s.l })),
-    agreed: d.a || [],
-    differ: (d.d || []).map(twoWay),
-    unconfirmed: d.u || [],
-    readDate: d.r || ""
-  };
-}
+const sourcesOf = (doc) => {
+  const record = {};
+  record.sources = (doc.s || []).map((entry) => ({ id: entry.i, site: entry.w, title: entry.t, type: entry.y, read: entry.r, url: entry.u, note: entry.n, reliability: entry.l }));
+  record.agreed = doc.a || [];
+  record.differ = (doc.d || []).map(disputeOf);
+  record.unconfirmed = doc.u || [];
+  record.readDate = doc.r || "";
+  return record;
+};
 
-async function fill() {
-  const [td, sd] = await Promise.all([getJson("data/trophies.json"), getJson("data/sources.json")]);
-  list = td.trophies.map(decodeTrophy);
-  src = decodeSources(sd);
-  return list;
-}
+const fill = async () => {
+  const docs = await Promise.all([fetchJson("data/trophies.json"), fetchJson("data/sources.json")]);
+  trophies = docs[0].trophies.map(trophyOf);
+  sources = sourcesOf(docs[1]);
+  return trophies;
+};
 
-export function loadTrophies() {
-  if (!pending) pending = fill().catch(err => { pending = null; throw err; });
-  return pending;
-}
+export const loadTrophies = () => {
+  if (!loading) loading = fill().catch((err) => { loading = null; throw err; });
+  return loading;
+};
 
-export function allTrophies() { return list; }
-export function trophyById(id) { return list.find(t => t.id === id); }
-export function sourcesRecord() { return src; }
-export function sourceById(id) { return src.sources.find(s => s.id === id); }
-export function allSources() { return src.sources; }
-export function trophiesInStage(n) { return list.filter(t => t.stage === n); }
+export const allTrophies = () => trophies;
+export const trophyById = (id) => trophies.find((trophy) => trophy.id === id);
 
-function rankMissable(t) {
-  return t.missable && t.missable.tier === "possibly" ? 0 : 1;
-}
+const missableRank = (trophy) => (trophy.missable && trophy.missable.tier === "possibly" ? 0 : 1);
+const byMissableThenId = (a, b) => missableRank(a) - missableRank(b) || a.id - b.id;
 
-export function missableTrophies() {
-  return list.filter(t => t.missable).sort((a, b) => rankMissable(a) - rankMissable(b) || a.id - b.id);
-}
-export function possiblyMissableTrophies() {
-  return list.filter(t => t.missable && t.missable.tier === "possibly");
-}
-export function watchTrophies() {
-  return list.filter(t => t.missable && t.missable.tier === "watch");
-}
-export function disputedTrophies() { return list.filter(t => t.disputed); }
-export function hiddenTrophies() { return list.filter(t => t.hidden); }
-export function storyTrophies() { return list.filter(t => t.story); }
+export const missableTrophies = () => trophies.filter((trophy) => trophy.missable).sort(byMissableThenId);
+export const sourcesRecord = () => sources;
+export const sourceById = (id) => sources.sources.find((entry) => entry.id === id);
+export const possiblyMissableTrophies = () => trophies.filter((trophy) => trophy.missable && trophy.missable.tier === "possibly");
+export const allSources = () => sources.sources;
+export const watchTrophies = () => trophies.filter((trophy) => trophy.missable && trophy.missable.tier === "watch");
+export const trophiesInStage = (n) => trophies.filter((trophy) => trophy.stage === n);
+export const disputedTrophies = () => trophies.filter((trophy) => trophy.disputed);
+export const hiddenTrophies = () => trophies.filter((trophy) => trophy.hidden);
+export const storyTrophies = () => trophies.filter((trophy) => trophy.story);
 
-export function gradeCounts(ids) {
+export const gradeCounts = (ids) => {
   const have = new Set(ids);
-  const out = {};
-  for (const t of list) {
-    const g = out[t.grade] || (out[t.grade] = { total: 0, earned: 0 });
-    g.total += 1;
-    if (have.has(t.id)) g.earned += 1;
-  }
-  return out;
-}
+  return trophies.reduce((counts, trophy) => {
+    const bucket = counts[trophy.grade] ?? (counts[trophy.grade] = { total: 0, earned: 0 });
+    bucket.total += 1;
+    if (have.has(trophy.id)) bucket.earned += 1;
+    return counts;
+  }, {});
+};
 
-export function guideSources(t) {
-  const ids = [];
-  for (const step of t.steps || []) {
-    for (const id of step.s || []) {
-      if (!ids.includes(id)) ids.push(id);
-    }
-  }
-  return ids;
-}
+export const guideSources = (trophy) =>
+  [...new Set((trophy.steps || []).flatMap((step) => step.s || []))];
 
-export function guidesUsingSource(id) {
-  return list.filter(t => guideSources(t).includes(id)).length;
-}
+export const guidesUsingSource = (id) =>
+  trophies.reduce((n, trophy) => n + (guideSources(trophy).includes(id) ? 1 : 0), 0);
 
-export function matrixCell(t, id) {
-  return (t.steps || []).filter(s => (s.s || []).includes(id)).length;
-}
+export const matrixCell = (trophy, id) =>
+  (trophy.steps || []).reduce((n, step) => n + ((step.s || []).includes(id) ? 1 : 0), 0);
 
-export function countersTotals(counts) {
-  let cur = 0, goal = 0;
-  for (const t of list) {
-    if (!t.psn) continue;
-    goal += t.psn.target;
-    cur += Math.min(counts[t.id] || 0, t.psn.target);
-  }
-  return { current: cur, target: goal, pct: goal ? Math.round(cur / goal * 100) : 0 };
-}
+export const countersTotals = (counts) => {
+  const totals = trophies.reduce(
+    (acc, trophy) => {
+      if (!trophy.psn) return acc;
+      acc.target += trophy.psn.target;
+      acc.current += Math.min(counts[trophy.id] || 0, trophy.psn.target);
+      return acc;
+    },
+    { current: 0, target: 0 }
+  );
+  return { ...totals, pct: totals.target ? Math.round((totals.current / totals.target) * 100) : 0 };
+};
 
-export function auditStats() {
-  let total = 0, cited = 0, two = 0;
-  for (const t of list) {
-    for (const s of t.steps || []) {
-      total += 1;
-      if (s.s && s.s.length) cited += 1;
-      if (s.s && s.s.length > 1) two += 1;
-    }
-  }
-  const topics = new Set();
-  const sites = new Set(src.sources.map(s => s.site));
-  for (const t of list) if (t.disputed) topics.add(t.disputed.topic);
+export const auditStats = () => {
+  const stepStats = trophies
+    .flatMap((trophy) => trophy.steps || [])
+    .reduce(
+      (acc, step) => ({
+        total: acc.total + 1,
+        cited: acc.cited + (step.s && step.s.length ? 1 : 0),
+        two: acc.two + (step.s && step.s.length > 1 ? 1 : 0),
+      }),
+      { total: 0, cited: 0, two: 0 }
+    );
+  const topics = new Set(trophies.filter((trophy) => trophy.disputed).map((trophy) => trophy.disputed.topic));
+  const sites = new Set(sources.sources.map((entry) => entry.site));
   return {
-    official: list.filter(t => t.name && t.description && t.grade).length,
-    totalTrophies: list.length,
-    totalClaims: total, citedClaims: cited, twoPlusClaims: two,
-    sourcePages: src.sources.length, sourceSites: sites.size, readDate: src.readDate,
+    official: trophies.filter((trophy) => trophy.name && trophy.description && trophy.grade).length,
+    totalTrophies: trophies.length,
+    totalClaims: stepStats.total,
+    citedClaims: stepStats.cited,
+    twoPlusClaims: stepStats.two,
+    sourcePages: sources.sources.length,
+    sourceSites: sites.size,
+    readDate: sources.readDate,
     disputes: topics.size,
-    disputedTrophies: list.filter(t => t.disputed).length,
-    unconfirmed: list.filter(t => t.unconfirmed).length,
+    disputedTrophies: disputedTrophies().length,
+    unconfirmed: trophies.filter((trophy) => trophy.unconfirmed).length,
     possiblyMissable: possiblyMissableTrophies().length,
-    watch: watchTrophies().length
+    watch: watchTrophies().length,
   };
-}
+};
